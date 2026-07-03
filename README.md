@@ -43,6 +43,7 @@ Runs **before** Claude executes a tool. Can block or modify the operation.
 | --------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------- |
 | [block-dangerous-commands](hook-scripts/pre-tool-use/block-dangerous-commands.js) | `Bash`                    | Blocks dangerous shell commands (rm -rf ~, fork bombs, curl\|sh) |
 | [protect-secrets](hook-scripts/pre-tool-use/protect-secrets.js)                   | `Read\|Edit\|Write\|Bash` | Prevents reading/modifying/exfiltrating sensitive files          |
+| [git-safety](hook-scripts/pre-tool-use/git-safety.js)                             | `Bash`                    | Branch-aware git guardrails + destructive gh CLI protection      |
 
 ### Post-Tool-Use
 
@@ -166,7 +167,6 @@ Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 | Hook               | Event            | Description                                     |
 | ------------------ | ---------------- | ----------------------------------------------- |
 | `protect-tests`    | PreToolUse       | Block test deletion/disabling                   |
-| `branch-guard`     | PreToolUse       | Block changes on main/master branch             |
 | `context-snapshot` | PreCompact       | Preserve context before compaction              |
 | `session-summary`  | Stop             | Generate summary on session end                 |
 | `ntfy-notify`      | Notification     | Free mobile push via [ntfy.sh](https://ntfy.sh) |
