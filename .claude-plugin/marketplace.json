@@ -27,6 +27,13 @@
       "description": "CLAUDE.md compliance scorecard — tallies which rules Claude actually follows vs ignores as you edit, and flags chronically-ignored rules to promote into a deterministic hook.",
       "category": "observability",
       "tags": ["compliance", "claude-md", "observability", "hooks", "posttooluse", "sessionstart", "sessionend"]
+    },
+    {
+      "name": "pr-provenance-stamp",
+      "source": "./plugins/pr-provenance-stamp",
+      "description": "Stamps a provenance receipt — prompts, estimated spend, tests run with exit codes, and a truthful agent-authored line split — into your PR body on `gh pr create`.",
+      "category": "git",
+      "tags": ["pr", "provenance", "github", "hooks", "pretooluse", "posttooluse"]
     }
   ]
 }
