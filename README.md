@@ -57,6 +57,8 @@ Runs **after** Claude executes a tool. Can react to results.
 
 > 🔌 **`context-hogs`** (per-file context-cost leaderboard) now ships as an installable **plugin** — see [Install as a plugin](#-install-as-a-plugin).
 
+> 🔌 **`dead-rules-audit`** (CLAUDE.md compliance scorecard) now ships as an installable **plugin** — see [Install as a plugin](#-install-as-a-plugin).
+
 ### Notification
 
 Fires when Claude needs user attention.
@@ -105,6 +107,7 @@ This repo is also a **Claude Code plugin marketplace**, so you can install a sin
 | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | [context-hogs](plugins/context-hogs) | Per-file context-cost leaderboard — attributes each tool result's tokens to the files it loaded, so you see which files cost you the most | `/context-hogs:leaderboard` renders the board on demand |
 | [nerf-receipts](plugins/nerf-receipts) | Personal flight recorder — records your own failure rate, edit churn & tokens/task by model version, and flags real shifts when a model changes | `/nerf-receipts:receipts` renders the trend card on demand |
+| [dead-rules-audit](plugins/dead-rules-audit) | CLAUDE.md compliance scorecard — tallies which rules Claude follows vs ignores as you edit (SessionStart + PostToolUse + SessionEnd), and flags chronically-ignored rules to promote into a deterministic hook | `/dead-rules-audit:scorecard` renders the scorecard on demand |
 
 > ⚡ The `context-hogs` PostToolUse hook is **async** — it records in the background and adds **zero latency** to a tool call. The SessionEnd summary and the `/context-hogs:leaderboard` command render the leaderboard.
 
