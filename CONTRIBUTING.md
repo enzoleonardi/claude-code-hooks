@@ -8,7 +8,6 @@ Thanks for your interest in contributing to claude-code-hooks!
    - `hook-scripts/pre-tool-use/` — runs before tool execution
    - `hook-scripts/post-tool-use/` — runs after tool execution
    - `hook-scripts/notification/` — handles notification events
-   - `hook-scripts/session/` — session start/end events
 
 2. **Follow the existing pattern:**
    ```javascript
@@ -58,6 +57,10 @@ node --test hook-scripts/tests/pre-tool-use/your-hook.test.js
 
 All tests must pass before merging.
 
+## Versioning
+
+Plugin versions are independent of the repo `package.json` version and independent of each other. Bump a plugin's `version` in its `.claude-plugin/plugin.json` whenever that plugin's shipped files change — the install cache is keyed by version, so a bump is what forces installed copies to refresh. Versions only ever move forward: never reset or downgrade one for cosmetic consistency (a re-published old version can collide with a stale cached copy of that same version on users' machines). Describe the bump in the PR so it is intentional rather than drift.
+
 ## Pull Request Process
 
 1. Fork the repo
@@ -71,7 +74,6 @@ All tests must pass before merging.
 
 Looking for inspiration? Here are some hooks that would be useful:
 
-- [ ] Auto-format code after Write/Edit (prettier, eslint --fix)
 - [ ] Notify Discord/Telegram on permission prompts
 - [ ] Block writes to protected branches
 - [ ] Log all commands to external service
