@@ -56,9 +56,15 @@ function bashAllowed(cmd, level = undefined) {
   assert.strictEqual(result.blocked, false, `Expected ALLOWED but BLOCKED by '${result.pattern?.id}': ${cmd}`);
 }
 
-function runHook(toolName, toolInput) {
+// Hermetic by default: HOOK_ASK_* is never inherited from the runner's shell —
+// tests opt in explicitly via envOverrides.
+function runHook(toolName, toolInput, envOverrides = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn('node', [SCRIPT_PATH]);
+    const env = { ...process.env, ...envOverrides };
+    for (const key of Object.keys(env)) {
+      if (key.startsWith('HOOK_ASK_') && !(key in envOverrides)) delete env[key];
+    }
+    const child = spawn('node', [SCRIPT_PATH], { env });
     let stdout = '';
     let stderr = '';
 
@@ -455,19 +461,43 @@ describe('Config: Pattern structures', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Integration: ask mode', () => {
-  it('returns "deny" for critical-level file (ASK.critical=false)', async () => {
+  it('returns "ask" for a critical-level file when HOOK_ASK_CRITICAL=true', async () => {
+    const { output } = await runHook('Read', { file_path: '/app/.env' }, { HOOK_ASK_CRITICAL: 'true' });
+    assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'ask');
+  });
+
+  it('returns "ask" for a high-level bash pattern when HOOK_ASK_HIGH=true', async () => {
+    const { output } = await runHook('Bash', { command: 'echo $SECRET_KEY' }, { HOOK_ASK_HIGH: 'true' });
+    assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'ask');
+  });
+
+  it('keeps the pattern id and tool action in the ask prompt', async () => {
+    const { output } = await runHook('Read', { file_path: '/app/.env' }, { HOOK_ASK_CRITICAL: 'true' });
+    assert.match(output.hookSpecificOutput?.permissionDecisionReason ?? '', /\[env-file\] Cannot read/);
+  });
+
+  it('ask mode is per level: HOOK_ASK_HIGH=true does not soften a critical file', async () => {
+    const { output } = await runHook('Read', { file_path: '/app/.env' }, { HOOK_ASK_HIGH: 'true' });
+    assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
+  });
+
+  it('only the literal string "true" enables ask mode ("TRUE" does not)', async () => {
+    const { output } = await runHook('Bash', { command: 'echo $SECRET_KEY' }, { HOOK_ASK_HIGH: 'TRUE' });
+    assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
+  });
+
+  it('explicit "false" keeps deny', async () => {
+    const { output } = await runHook('Bash', { command: 'echo $SECRET_KEY' }, { HOOK_ASK_HIGH: 'false' });
+    assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
+  });
+
+  it('defaults to "deny" for a critical-level file when no HOOK_ASK_* is set', async () => {
     const { output } = await runHook('Read', { file_path: '/app/.env' });
     assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
   });
 
-  it('returns "deny" for high-level bash pattern (ASK.high=false)', async () => {
+  it('defaults to "deny" for a high-level bash pattern when no HOOK_ASK_* is set', async () => {
     const { output } = await runHook('Bash', { command: 'echo $SECRET_KEY' });
     assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
-  });
-
-  it('ASK defaults are correct', () => {
-    assert.strictEqual(ASK.critical, false, 'Default ASK.critical should be false');
-    assert.strictEqual(ASK.high, false, 'Default ASK.high should be false');
-    assert.strictEqual(ASK.strict, false, 'Default ASK.strict should be false');
   });
 });

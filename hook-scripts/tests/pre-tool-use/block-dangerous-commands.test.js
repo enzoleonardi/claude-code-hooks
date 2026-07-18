@@ -33,10 +33,16 @@ function shouldAllow(cmd, safetyLevel = undefined) {
   assert.strictEqual(result.blocked, false, `Expected ALLOWED but was BLOCKED by '${result.pattern?.id}': ${cmd}`);
 }
 
-// Spawns the actual script and returns parsed output
-function runHook(command) {
+// Spawns the actual script and returns parsed output.
+// Hermetic by default: HOOK_ASK_* is never inherited from the runner's shell —
+// tests opt in explicitly via envOverrides.
+function runHook(command, envOverrides = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn('node', [SCRIPT_PATH]);
+    const env = { ...process.env, ...envOverrides };
+    for (const key of Object.keys(env)) {
+      if (key.startsWith('HOOK_ASK_') && !(key in envOverrides)) delete env[key];
+    }
+    const child = spawn('node', [SCRIPT_PATH], { env });
     let stdout = '';
     let stderr = '';
 
@@ -258,24 +264,42 @@ describe('Config: PATTERNS structure', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Integration: ask mode', () => {
-  it('returns "ask" decision for strict-level pattern when ASK.strict is true', async () => {
-    // strict patterns are only active at strict safety level
-    // ASK.strict defaults to true, so matching patterns should return "ask"
-    if (!ASK.strict) return; // skip if default changed
-
-    // We need a custom runner that sets SAFETY_LEVEL to strict
-    // Instead, test via the integration output — strict patterns require strict level
-    // so we test the default ASK config expectation
-    assert.strictEqual(ASK.strict, false, 'Default ASK.strict should be false');
-    assert.strictEqual(ASK.critical, false, 'Default ASK.critical should be false');
+  it('returns "ask" for a critical-level pattern when HOOK_ASK_CRITICAL=true', async () => {
+    const { output } = await runHook('rm -rf ~/', { HOOK_ASK_CRITICAL: 'true' });
+    assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'ask');
   });
 
-  it('returns "deny" decision for critical-level pattern (ASK.critical=false)', async () => {
+  it('returns "ask" for a high-level pattern when HOOK_ASK_HIGH=true', async () => {
+    const { output } = await runHook('git reset --hard HEAD~1', { HOOK_ASK_HIGH: 'true' });
+    assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'ask');
+  });
+
+  it('keeps the pattern id and reason in the ask prompt', async () => {
+    const { output } = await runHook('git reset --hard HEAD~1', { HOOK_ASK_HIGH: 'true' });
+    assert.match(output.hookSpecificOutput?.permissionDecisionReason ?? '', /\[git-reset-hard\]/);
+  });
+
+  it('ask mode is per level: HOOK_ASK_HIGH=true does not soften a critical pattern', async () => {
+    const { output } = await runHook('rm -rf ~/', { HOOK_ASK_HIGH: 'true' });
+    assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
+  });
+
+  it('only the literal string "true" enables ask mode ("1" does not)', async () => {
+    const { output } = await runHook('git reset --hard HEAD~1', { HOOK_ASK_HIGH: '1' });
+    assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
+  });
+
+  it('explicit "false" keeps deny', async () => {
+    const { output } = await runHook('git reset --hard HEAD~1', { HOOK_ASK_HIGH: 'false' });
+    assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
+  });
+
+  it('defaults to "deny" for a critical-level pattern when no HOOK_ASK_* is set', async () => {
     const { output } = await runHook('rm -rf ~/');
     assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
   });
 
-  it('returns "deny" decision for high-level pattern (ASK.high=false)', async () => {
+  it('defaults to "deny" for a high-level pattern when no HOOK_ASK_* is set', async () => {
     const { output } = await runHook('git reset --hard HEAD~1');
     assert.strictEqual(output.hookSpecificOutput?.permissionDecision, 'deny');
   });

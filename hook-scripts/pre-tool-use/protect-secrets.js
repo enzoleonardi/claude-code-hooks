@@ -9,6 +9,11 @@
  *   high     - + secrets files, env dumps, exfiltration attempts
  *   strict   - + database configs, any config that might contain secrets
  *
+ * Ask mode (opt-in, per level): set HOOK_ASK_CRITICAL / HOOK_ASK_HIGH /
+ * HOOK_ASK_STRICT to the literal string "true" in the hook command to have
+ * that level prompt the user ("ask") instead of blocking outright ("deny").
+ * e.g. "command": "HOOK_ASK_STRICT=true node /path/to/protect-secrets.js"
+ *
  * Setup in .claude/settings.json:
  * {
  *   "hooks": {

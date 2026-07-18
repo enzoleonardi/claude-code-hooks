@@ -8,6 +8,11 @@
  *   high     - + risky: force push main, secrets exposure, git reset --hard
  *   strict   - + cautionary: any force push, sudo rm, docker prune
  *
+ * Ask mode (opt-in, per level): set HOOK_ASK_CRITICAL / HOOK_ASK_HIGH /
+ * HOOK_ASK_STRICT to the literal string "true" in the hook command to have
+ * that level prompt the user ("ask") instead of blocking outright ("deny").
+ * e.g. "command": "HOOK_ASK_STRICT=true node /path/to/block-dangerous-commands.js"
+ *
  * Setup in .claude/settings.json:
  * {
  *   "hooks": {
